@@ -13,6 +13,16 @@ describe "Authentication" do
 		it { should have_selector 'title', text: 'Sign in' }
 	end
 
+	describe 'not signed in' do
+
+		before do
+			visit root_path
+		end
+
+		it { should_not have_link 'Profile' }
+		it { should_not have_link 'Settings' }
+	end
+
 	describe 'signin' do
 		before do
 			visit signin_path

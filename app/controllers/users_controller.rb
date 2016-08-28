@@ -1,5 +1,6 @@
 class UsersController < ApplicationController
-  
+
+  before_filter :not_signed_in_user, only: [:new, :create]  
 	before_filter :signed_in_user, only: [:index, :edit, :update, :destroy]
 	before_filter :correct_user, only: [:edit, :update]
   before_filter :admin_user, only: :destroy
@@ -20,7 +21,7 @@ class UsersController < ApplicationController
 	def create
 		@user = User.new params[:user]
 		if @user.save
-      		sign_in @user
+      sign_in @user
 			flash[:success] = 'Welcome to the Sample App!'
 			redirect_to @user
 		else
@@ -42,12 +43,21 @@ class UsersController < ApplicationController
   end
 
   def destroy
-    (User.find params[:id]).destroy
-    flash[:success] = 'User destroyed'
+    user = User.find params[:id]
+    if user != current_user
+      (User.find params[:id]).destroy
+      flash[:success] = 'User destroyed'
+    end
     redirect_to users_path
   end
 
   private
+  def not_signed_in_user
+    if signed_in?
+      redirect_to root_path
+    end
+  end
+
   def signed_in_user
   	unless signed_in?
   		store_location

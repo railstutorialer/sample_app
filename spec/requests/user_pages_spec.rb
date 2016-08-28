@@ -16,23 +16,59 @@ describe "User pages" do
 			FactoryGirl.create :user
 		end
 
-		let! :m1 do
-			FactoryGirl.create :micropost, user: user, content: 'Foo'
+
+
+		describe 'own profile page' do
+
+			let! :m1 do
+				FactoryGirl.create :micropost, user: user, content: 'Foo'
+			end
+
+			let! :m2 do
+				FactoryGirl.create :micropost, user: user, content: 'Bar'
+			end
+
+			before { visit user_path user }
+
+			it { should have_selector 'h1', text: user.name }
+			it { should have_selector 'title', text: user.name }
+
+			describe 'microposts' do
+				
+				it { should have_content m1.content }
+				it { should have_content m2.content }
+				it { should have_content user.microposts.count }
+
+				describe 'pagination' do
+					it { should have_pagination }
+
+					it 'shoud list each micropost of a user' do
+						(user.microposts.paginate page: 1).each do |micropost|
+							should have_selector 'li', text: micropost.content
+						end
+					end
+				end
+			end
 		end
 
-		let! :m2 do
-			FactoryGirl.create :micropost, user: user, content: 'Bar'
-		end
+		describe 'other user\'s profile page' do
 
-		before { visit user_path user }
+			let :other_user do
+				FactoryGirl.create :user
+			end
 
-		it { should have_selector 'h1', text: user.name }
-		it { should have_selector 'title', text: user.name }
+			let! :m1 do
+				FactoryGirl.create :micropost, user: other_user, content: 'Foo'
+			end
 
-		describe 'microposts' do
-			it { should have_content m1.content }
-			it { should have_content m2.content }
-			it { should have_content user.microposts.count }
+			let! :m2 do
+				FactoryGirl.create :micropost, user: other_user, content: 'Bar'
+			end
+
+			before { visit user_path other_user }
+
+			it { should_not have_link 'delete' }
+
 		end
 	end
 
@@ -72,7 +108,7 @@ describe "User pages" do
 
 			it 'should create a user' do
 				result = expect do
-					click_button submit
+					valid_signup
 				end
 				result.to (change User, :count).by 1
 			end
@@ -87,7 +123,7 @@ describe "User pages" do
 				end
 
 				it { should have_selector 'title' , text: user.name }
-				it { should have_selector 'div.alert.alert-success', text: 'Welcome' }
+				it { should have_success_message 'Welcome' }
 				it { should have_link 'Sign out' }
 			end
 		end
@@ -151,7 +187,7 @@ describe "User pages" do
 		it { should have_selector 'h1', text: 'All users' }
 
 		describe 'pagination' do
-			it { should have_selector 'div.pagination' }
+			it { should have_pagination }
 
 			it 'shoud list each user' do
 				(User.paginate page: 1).each do |user|
@@ -177,6 +213,10 @@ describe "User pages" do
 				end
 
 				it {should_not have_link 'delete', href: (user_path admin) }
+
+				it 'should not be able to delete himself' do
+					expect { delete (user_path admin) }.not_to change User, :count 
+				end
 			end
 		end
 	end
