@@ -16,8 +16,6 @@ describe "User pages" do
 			FactoryGirl.create :user
 		end
 
-
-
 		describe 'own profile page' do
 
 			let! :m1 do
@@ -69,6 +67,71 @@ describe "User pages" do
 
 			it { should_not have_link 'delete' }
 
+		end
+
+		describe 'follow/unfollow buttons' do
+			let :other_user do
+				FactoryGirl.create :user
+			end
+
+			before do
+				sign_in user
+			end
+
+			describe 'following a user' do
+				before do 
+					visit user_path other_user
+				end
+
+				it 'should increment the followed user count' do
+					result = expect do
+						click_button 'Follow'
+					end
+
+					result.to (change user.followed_users, :count).by 1
+				end
+
+				it "should increment the other user's followers count" do
+					result = expect do
+						click_button "Follow"
+					end
+					result.to (change other_user.followers, :count).by 1
+				end
+
+				describe 'toggling the button' do
+					before { click_button 'Follow' }
+					it { should have_selector 'input', value: 'Unfollow' }
+				end
+			end
+
+			describe 'unfollowing a user' do
+				before do
+					user.follow! other_user
+					visit user_path other_user
+				end
+
+				it 'should decrement the followed user count' do
+					result = expect do
+						click_button 'Unfollow'
+					end
+					result.to (change user.followed_users, :count).by -1
+				end
+
+				it "should decrement the other user's followers count" do
+					result = expect do 
+						click_button "Unfollow"
+					end
+					result.to (change other_user.followers, :count).by -1
+				end
+
+				describe 'toggling the button' do
+					before do 
+						click_button "Unfollow" 
+					end
+					
+					it { should have_selector 'input', value: "Follow" }
+				end
+			end
 		end
 	end
 
@@ -218,6 +281,42 @@ describe "User pages" do
 					expect { delete (user_path admin) }.not_to change User, :count 
 				end
 			end
+		end
+	end
+
+
+	describe 'following/followers' do
+		let :user do
+			FactoryGirl.create :user
+		end
+
+		let :other_user do
+			FactoryGirl.create :user
+		end
+
+		before do
+			user.follow! other_user
+		end
+
+		describe 'followed users' do
+			before do
+				sign_in user
+				visit following_user_path user
+			end
+			it { should have_selector 'title', text: (full_title 'Following') }
+			it { should have_selector 'h3', text: 'Following'}
+			it { should have_link other_user.name, href: (user_path other_user) }
+		end
+
+		describe 'followers' do
+			before do
+				sign_in user
+				visit followers_user_path other_user
+			end
+
+			it {should have_selector 'title', text: (full_title 'Followers') }
+			it { should have_selector 'h3', text: 'Followers' }
+			it { should have_link user.name, href: (user_path user)}
 		end
 	end
 end

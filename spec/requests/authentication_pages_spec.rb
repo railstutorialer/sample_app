@@ -77,6 +77,23 @@ describe "Authentication" do
 			end
 
 			describe 'in the Users controller' do
+
+				describe 'visiting the following page' do
+					before do
+						visit following_user_path user
+					end
+
+					it { should have_selector 'title', text: 'Sign in'}
+				end
+
+				describe 'visiting the followers page' do
+					before do 
+						visit followers_user_path user
+					end
+
+					it { should have_selector 'title', text: 'Sign in' }
+				end
+
 				describe 'visiting the edit page' do
 					before do
 						visit (edit_user_path user)
@@ -92,18 +109,40 @@ describe "Authentication" do
 			end
 
 			describe 'in the Microposts controller' do
-				before do
-					post microposts_path
+				describe 'submitting to the create action' do
+					before do
+						post microposts_path
+					end
+
+					specify { response.should redirect_to signin_path }
 				end
-				specify { response.should redirect_to signin_path }
+
+				describe 'submitting to the destroy action' do
+					before do
+						micropost = FactoryGirl.create :micropost
+						delete (micropost_path micropost)
+					end
+					specify { response.should redirect_to signin_path }
+				end
 			end
 
-			describe 'submitting to the destroy action' do
-				before do
-					micropost = FactoryGirl.create :micropost
-					delete (micropost_path micropost)
+			describe 'in the Relationships controller' do
+				describe 'submitting to the create action' do
+					before do 
+						post relationships_path 
+					end
+					
+					specify { response.should redirect_to signin_path}
 				end
-				specify { response.should redirect_to signin_path }
+
+				describe 'submitting to the destory action' do
+					before do
+						delete relationship_path 1
+					end
+
+					specify { response.should redirect_to signin_path }
+				end
+
 			end
 		end
 
